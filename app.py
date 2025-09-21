@@ -5,8 +5,11 @@ import os
 
 app = FastAPI()
 
-HF_TOKEN = os.getenv("HF_TOKEN")  # We’ll set this in Render
+# Hugging Face token stored in Render environment variable HF_TOKEN
+HF_TOKEN = os.getenv("HF_TOKEN")  
+# Replace this with the exact model ID from Hugging Face
 MODEL_ID = "mistralai/Mistral-7B-Instruct-v0.3"
+
 API_URL = f"https://api-inference.huggingface.co/models/{MODEL_ID}"
 HEADERS = {"Authorization": f"Bearer {HF_TOKEN}"}
 
@@ -16,12 +19,27 @@ class Query(BaseModel):
 @app.post("/chat")
 def chat(query: Query):
     payload = {"inputs": query.prompt}
-    response = requests.post(API_URL, headers=HEADERS, json=payload)
+    
+    try:
+        response = requests.post(API_URL, headers=HEADERS, json=payload)
+    except Exception as e:
+        return {"error": f"Failed to connect to Hugging Face API: {str(e)}"}
+    
+    # Check HTTP status
+    if response.status_code != 200:
+        return {"error": f"Hugging Face API returned {response.status_code}", "raw": response.text}
+
     try:
         data = response.json()
-        return {"response": data[0]["generated_text"]}
+        # Handle both list and dict response structures
+        if isinstance(data, list) and "generated_text" in data[0]:
+            return {"response": data[0]["generated_text"]}
+        elif isinstance(data, dict) and "generated_text" in data:
+            return {"response": data["generated_text"]}
+        else:
+            return {"error": "Unexpected response structure", "raw": data}
     except Exception as e:
-        return {"error": str(e), "raw": response.text}
+        return {"error": f"Failed to parse response: {str(e)}", "raw": response.text}
 
 @app.get("/")
 def root():
