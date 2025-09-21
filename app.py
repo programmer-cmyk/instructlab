@@ -6,7 +6,7 @@ import os
 app = FastAPI()
 
 HF_TOKEN = os.getenv("HF_TOKEN")
-MODEL_ID = "mistralai/Mistral-7B-Instruct-v0.3"
+MODEL_ID = "instructlab/granite-7b-lab"
 API_URL = f"https://api-inference.huggingface.co/models/{MODEL_ID}"
 HEADERS = {"Authorization": f"Bearer {HF_TOKEN}"}
 
