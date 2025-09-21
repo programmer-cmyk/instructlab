@@ -5,11 +5,8 @@ import os
 
 app = FastAPI()
 
-# Hugging Face token stored in Render environment variable HF_TOKEN
-HF_TOKEN = os.getenv("HF_TOKEN")  
-# Replace this with the exact model ID from Hugging Face
+HF_TOKEN = os.getenv("HF_TOKEN")
 MODEL_ID = "mistralai/Mistral-7B-Instruct-v0.3"
-
 API_URL = f"https://api-inference.huggingface.co/models/{MODEL_ID}"
 HEADERS = {"Authorization": f"Bearer {HF_TOKEN}"}
 
@@ -21,17 +18,15 @@ def chat(query: Query):
     payload = {"inputs": query.prompt}
     
     try:
-        response = requests.post(API_URL, headers=HEADERS, json=payload)
+        response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
     except Exception as e:
         return {"error": f"Failed to connect to Hugging Face API: {str(e)}"}
     
-    # Check HTTP status
     if response.status_code != 200:
         return {"error": f"Hugging Face API returned {response.status_code}", "raw": response.text}
 
     try:
         data = response.json()
-        # Handle both list and dict response structures
         if isinstance(data, list) and "generated_text" in data[0]:
             return {"response": data[0]["generated_text"]}
         elif isinstance(data, dict) and "generated_text" in data:
